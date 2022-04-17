@@ -3,34 +3,51 @@ package main
 import "fmt"
 
 func main() {
-	// map的使用
-	m1 := make(map[string]string)
-	m1["name"] = "Tom"
-	m1["age"] = "12"
-	fmt.Println(m1)
-	fmt.Printf("%T\n", m1)
+	i, s := f1(1, "23")
+	fmt.Println(i, s)
+	fn := func() {
+		fmt.Println("匿名函数")
+	}
+	fn()
 
-	// 下面这种声明必须要初始化一下
-	var m2 map[int]int
-	m2 = map[int]int{}
-	m2[1] = 1
-	m2[2] = 2
-	fmt.Println(m2)
+	f2(1, 2, 3, 4, 5, 6, 7, 8)
 
-	m3 := map[int]string{1: "tom", 2: "jack"}
-	fmt.Println(m3)
+	(func() {
+		fmt.Println("自执行函数")
+	})()
 
-	m4 := make(map[int]interface{})
-	m4[1] = "tom"
-	m4[2] = 12
-	m4[3] = true
-	m4[4] = [...]int{1, 2, 3, 4}
-	fmt.Println(m4, len(m4))
+	f3(34)()
+	// defer 函数延后执行
+	defer f4()
+	fmt.Println("我后执行")
+}
 
-	delete(m4, 4)
-	fmt.Println(m4, len(m4))
+func f4() {
+	fmt.Println("我先执行")
+}
 
-	for k, v := range m4 {
+/**
+go 语言中函数不能嵌套函数
+*/
+func f1(data1 int, data2 string) (ret1 int, ret2 string) {
+	if data1 > 3 {
+		return data1, data2
+	} else {
+		return data1, "数据是小的"
+	}
+}
+
+// 可选参数函数
+func f2(data1 int, data2 ...int) {
+	fmt.Println(data1, data2)
+	for k, v := range data2 {
 		fmt.Println(k, v)
+	}
+}
+
+// 闭包函数
+func f3(data int) func() {
+	return func() {
+		fmt.Println("数据是", data)
 	}
 }
