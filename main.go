@@ -3,51 +3,75 @@ package main
 import "fmt"
 
 func main() {
-	i, s := f1(1, "23")
-	fmt.Println(i, s)
-	fn := func() {
-		fmt.Println("匿名函数")
-	}
-	fn()
+	// go 指针
+	/*var a string
+	a = "abc"
+	var b string
+	b = a
+	b = "bcd"
+	fmt.Println(a, b)*/
+	// 指针demo
+	var a string
+	a = "abc"
+	var b *string
+	b = &a
+	*b = "bcd"
+	fmt.Println(a, b, *b)
+	// 指针传参
+	var str string = "我是main内部的"
+	point(&str)
+	fmt.Println(str)
 
-	f2(1, 2, 3, 4, 5, 6, 7, 8)
+	// 指针数组
+	var arr1 [5]string
+	arr1 = [5]string{"1", "2", "3", "4", "5"}
+	//arr1[3] = "3"
+	var arrP *[5]string
+	arrP = &arr1
+	arrP[3] = "345"
+	fmt.Println(arr1, arrP, *arrP)
 
-	(func() {
-		fmt.Println("自执行函数")
-	})()
+	// 数组指针
+	var arr2 [5]*string
+	var str1 string = "str1"
+	var str2 string = "str2"
+	var str3 string = "str3"
+	var str4 string = "str4"
+	var str5 string = "str5"
+	arr2 = [5]*string{&str1, &str2, &str3, &str4, &str5}
+	*arr2[3] = "123"
+	fmt.Println(str4)
 
-	f3(34)()
-	// defer 函数延后执行
-	defer f4()
-	fmt.Println("我后执行")
+	// 指针map
+	var m1 map[int]int
+	m1 = map[int]int{}
+	m1[1] = 1
+	m1[2] = 2
+	m1[3] = 3
+	var m2 *map[int]int
+	m2 = &m1
+	(*m2)[3] = 789
+	fmt.Println(m1, m2)
+
+	// map指针
+	var m3 map[int]*int
+	m3 = map[int]*int{}
+	var i1 int = 1
+	var i2 int = 2
+	var i3 int = 3
+	m3[1] = &i1
+	m3[2] = &i2
+	m3[3] = &i3
+	*(m3[2]) = 456
+	fmt.Println(m3, i2)
+
+	// 简化版
+	var s string = "我是来测试地址的"
+	p := &s
+	*p = "123456"
+	fmt.Println(s, p, *p)
 }
 
-func f4() {
-	fmt.Println("我先执行")
-}
-
-/**
-go 语言中函数不能嵌套函数
-*/
-func f1(data1 int, data2 string) (ret1 int, ret2 string) {
-	if data1 > 3 {
-		return data1, data2
-	} else {
-		return data1, "数据是小的"
-	}
-}
-
-// 可选参数函数
-func f2(data1 int, data2 ...int) {
-	fmt.Println(data1, data2)
-	for k, v := range data2 {
-		fmt.Println(k, v)
-	}
-}
-
-// 闭包函数
-func f3(data int) func() {
-	return func() {
-		fmt.Println("数据是", data)
-	}
+func point(str *string) {
+	*str = "我是函数内部的"
 }
