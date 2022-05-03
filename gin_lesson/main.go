@@ -3,13 +3,34 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/testdata/protoexample"
+	"github.com/go-playground/validator/v10"
+	"io"
 	"net/http"
+	"os"
 )
 
 type LoginForm struct {
 	User     string `form:"user" binding:"required"`
 	Password string `form:"password" binding:"required"`
+}
+
+type PostParams struct {
+	Name string `json:"name"`
+	Age  int    `json:"age" binding:"required,mustBig"`
+	Sex  bool   `json:"sex"`
+}
+
+func mustBig(fl validator.FieldLevel) bool {
+	fmt.Println(fl)
+	fmt.Println(fl.Field())
+	fmt.Println(fl.Field().Interface())
+	fmt.Println(fl.Field().Interface().(int))
+	if fl.Field().Interface().(int) > 18 {
+		return true
+	}
+	return false
 }
 
 func main() {
@@ -20,6 +41,9 @@ func main() {
 	// gin默认中间件
 	r := gin.Default()
 	//r := gin.New()
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		v.RegisterValidation("mustBig", mustBig)
+	}
 
 	// demo
 	r.GET("/", func(c *gin.Context) {
@@ -165,6 +189,35 @@ func main() {
 		//_ = c.SaveUploadedFile(file, dst)
 		//c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
 		c.String(http.StatusOK, fmt.Sprintf("%d files uploaded!", len(files)))
+	})
+
+	r.POST("/testParams", func(c *gin.Context) {
+		var p PostParams
+		err := c.ShouldBindJSON(&p)
+		if err != nil {
+			fmt.Println(err)
+			c.JSON(http.StatusOK, gin.H{
+				"msg":  "接口失败",
+				"data": gin.H{},
+			})
+		} else {
+			c.JSON(http.StatusOK, gin.H{
+				"msg":  "接口成功",
+				"data": p,
+			})
+		}
+	})
+
+	// 回显
+	r.POST("/testUpload", func(c *gin.Context) {
+		file, _ := c.FormFile("file")
+		out, _ := file.Open()
+		defer out.Close()
+		in, _ := os.Create("./" + file.Filename)
+		defer in.Close()
+		io.Copy(in, out)
+		c.Writer.Header().Add("Content-Disposition", fmt.Sprintf("attachment;filename=%s", file.Filename))
+		c.File("./" + file.Filename)
 	})
 	err := r.Run(":8080")
 	if err != nil {
