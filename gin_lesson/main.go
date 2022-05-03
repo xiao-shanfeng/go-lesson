@@ -6,9 +6,11 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/go-playground/validator/v10"
+	"github.com/op/go-logging"
 	"io"
 	"net/http"
 	"os"
+	"time"
 )
 
 type LoginForm struct {
@@ -33,13 +35,73 @@ func mustBig(fl validator.FieldLevel) bool {
 	return false
 }
 
+func middle() func(*gin.Context) {
+	return func(c *gin.Context) {
+		fmt.Println("进入中间件1")
+		t := time.Now()
+		c.Next()
+		fmt.Println("中间件1时间", time.Since(t))
+		fmt.Println("离开中间件1")
+	}
+}
+
+func middle1() func(ctx *gin.Context) {
+	return func(c *gin.Context) {
+		fmt.Println("进入中间件2")
+		t := time.Now()
+		c.Next()
+		fmt.Println("中间件2时间", time.Since(t))
+		fmt.Println("离开中间件2")
+	}
+}
+
+var log = logging.MustGetLogger("goLogging")
+var format = logging.MustStringFormatter(`%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:03x}%{color:reset} %{message}`)
+
 func main() {
+	// go-logging使用
+	backend := logging.NewLogBackend(os.Stderr, "", 0)
+
+	backendLevel := logging.AddModuleLevel(backend)
+	backendLevel.SetLevel(logging.ERROR, "")
+
+	log.Info("info")
+	log.Error("error")
+	log.Warning("warning")
+	log.Debug("debug")
+	log.Notice("notice")
+	log.Critical("critical")
 	// 禁止控制台显示颜色
 	//gin.DisableConsoleColor()
 	// 强制控制台显示颜色
-	gin.ForceConsoleColor()
+	//gin.ForceConsoleColor()
+
+	// gin日志
+	//gin.DisableConsoleColor()
+
+	//file, _ := os.Create("gin.log")
+	//gin.DefaultWriter = io.MultiWriter(file, os.Stdout)
+
 	// gin默认中间件
 	r := gin.Default()
+	//r := gin.New()
+
+	// 自定义日志格式
+	//r.Use(gin.LoggerWithFormatter(func(params gin.LogFormatterParams) string {
+	//	// 自定义格式
+	//	return fmt.Sprintf("%s - [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
+	//		params.ClientIP,
+	//		params.TimeStamp.Format(time.RFC1123),
+	//		params.Method,
+	//		params.Path,
+	//		params.Request.Proto,
+	//		params.StatusCode,
+	//		params.Latency,
+	//		params.Request.UserAgent(),
+	//		params.ErrorMessage)
+	//}))
+	//r.Use(gin.Recovery())
+
 	//r := gin.New()
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterValidation("mustBig", mustBig)
@@ -219,6 +281,15 @@ func main() {
 		c.Writer.Header().Add("Content-Disposition", fmt.Sprintf("attachment;filename=%s", file.Filename))
 		c.File("./" + file.Filename)
 	})
+
+	v1 := r.Group("v1").Use(middle()).Use(middle1())
+	v1.GET("test", func(c *gin.Context) {
+		fmt.Println("我是分组方法内部")
+		c.JSON(http.StatusOK, gin.H{
+			"status": "success",
+		})
+	})
+
 	err := r.Run(":8080")
 	if err != nil {
 		fmt.Println(err)
